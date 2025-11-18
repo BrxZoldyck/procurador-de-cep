@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Validador de CEP</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* Fundo de cidade visível */
+        background: url('https://images.unsplash.com/photo-1549921296-3e1c4f6bfb45?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+        background-size: cover;
+        font-family: 'Segoe UI', sans-serif;
+        color: #eae623;
+    }
+
+    .card {
+        width: 400px;
+        padding: 35px;
+        border-radius: 15px;
+        background: #0e0d0d; /* fundo sólido do card */
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        text-align: center;
+    }
+
+    h2 {
+        font-size: 26px;
+        margin-bottom: 10px;
+        color: rgb(255, 255, 255);
+    }
+
+    input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        outline: none;
+        border: 2px solid #fff;
+        background: #222;
+        color: white;
+        font-size: 18px;
+    }
+
+    button {
+        width: 100%;
+        padding: 15px;
+        margin-top: 20px;
+        border-radius: 10px;
+        border: none;
+        background: #fff;
+        color: #000;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background: #000000;
+    }
+
+    #resultado {
+        margin-top: 25px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .box {
+        padding: 12px;
+        background: #222;
+        border-left: 4px solid white;
+        border-radius: 10px;
+        font-size: 16px;
+    }
+
+    .ok { border-color: #4CAF50; }
+    .erro { border-color: #ff4444; }
+    .alerta { border-color: #ffdd44; }
+
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>🔍 Validador de CEP</h2>
+
+    <input type="text" id="cep" maxlength="8" placeholder="Digite o CEP (8 dígitos)" 
+           oninput="this.value=this.value.replace(/\D/g,'')">
+    <button onclick="validar()">Validar</button>
+
+    <div id="resultado"></div>
+</div>
+
+<script>
+function criarCaixa(texto, classe = "") {
+    return `<div class="box ${classe}">${texto}</div>`;
+}
+
+function formatarResultado(data) {
+    let html = "";
+
+    if (data.status === "valido") {
+        html += criarCaixa("✔ CEP válido", "ok");
+        html += criarCaixa(`<b>Logradouro:</b> ${data.dados.logradouro}`);
+        html += criarCaixa(`<b>Bairro:</b> ${data.dados.bairro}`);
+        html += criarCaixa(`<b>Cidade:</b> ${data.dados.cidade}`);
+        html += criarCaixa(`<b>UF:</b> ${data.dados.uf.toUpperCase()}`);
+    } 
+    else if (data.status === "divergente") {
+        html += criarCaixa("⚠ Divergências encontradas", "alerta");
+
+        html += criarCaixa("<b>ViaCEP</b>");
+        html += criarCaixa(`Logradouro: ${data.viaCEP.logradouro}`);
+        html += criarCaixa(`Bairro: ${data.viaCEP.bairro}`);
+        html += criarCaixa(`Cidade: ${data.viaCEP.cidade}`);
+        html += criarCaixa(`UF: ${data.viaCEP.uf.toUpperCase()}`);
+
+        html += criarCaixa("<b>BrasilAPI</b>");
+        html += criarCaixa(`Logradouro: ${data.BrasilAPI.logradouro}`);
+        html += criarCaixa(`Bairro: ${data.BrasilAPI.bairro}`);
+        html += criarCaixa(`Cidade: ${data.BrasilAPI.cidade}`);
+        html += criarCaixa(`UF: ${data.BrasilAPI.uf.toUpperCase()}`);
+    } 
+    else {
+        html += criarCaixa(`❌ ${data.mensagem}`, "erro");
+    }
+
+    return html;
+}
+
+function validar() {
+    let cep = document.getElementById("cep").value.trim();
+
+    if (!/^\d{8}$/.test(cep)) {
+        document.getElementById("resultado").innerHTML =
+            criarCaixa("❌ CEP inválido. Digite 8 números.", "erro");
+        return;
+    }
+
+    document.getElementById("resultado").innerHTML = criarCaixa("⌛ Buscando informações...");
+
+    fetch("http://127.0.0.1:5000/validar/" + cep)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("resultado").innerHTML = formatarResultado(data);
+        })
+        .catch(() => {
+            document.getElementById("resultado").innerHTML =
+                criarCaixa("❌ Erro ao conectar ao servidor Python.", "erro");
+        });
+}
+</script>
+
+</body>
+</html>
